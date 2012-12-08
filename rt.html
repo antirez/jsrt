@@ -29,10 +29,22 @@ function computeScene() {
     sphere2.center.x += 1.2;
     sphere2.radius = 0.5;
     sphere2.center.z += 1;
+    sphere2.center.y -= .3;
+
     light1.center.set(4,-1,-2);
-    scene.addObject(new Obj("Sphere 1",sphere1));
-    scene.addObject(new Obj("Sphere 2",sphere2));
+
+    Object1 = scene.addObject(new Obj("Sphere 1",sphere1));
+    Object2 = scene.addObject(new Obj("Sphere 2",sphere2));
     scene.addLight(new Obj("Light 1",light1));
+
+    Object1.color.r = 1;
+    Object1.color.g = .3;
+    Object1.color.b = .3;
+
+    Object2.color.r = .3;
+    Object2.color.g = 1;
+    Object2.color.b = .3;
+
     scene.traceScene();
 }
 
@@ -196,6 +208,7 @@ function Light() {
 function Obj(name,o) {
     this.name = name;
     this.o = o;
+    this.color = {r: 1, g: 1, b: 1};
 }
 
 // Scene object
@@ -206,15 +219,17 @@ function Scene() {
 
     this.addObject = function(o) {
         this.objects.push(o);
+        return o;
     }
 
     this.addLight = function(o) {
         this.lights.push(o);
+        return o;
     }
 
     this.traceRay = function (ray) {
         var obj = null;
-        var color = 0;
+        var color = {r: 0, g: 0, b: 0}
         var distance = +Infinity;
 
         for (var j = 0; j < this.objects.length; j++) {
@@ -247,8 +262,11 @@ function Scene() {
                 /* Now the dot product between the normal and the point
                    towards the light is the cosine between the angle
                    formed by the vectors, that is, our brightness. */
-                color = normal.dot(l);
-                if (color < 0) color = 0;
+                var brightness = normal.dot(l);
+                if (brightness < 0) brightness = 0;
+                color.r = brightness * obj.color.r;
+                color.g = brightness * obj.color.g;
+                color.b = brightness * obj.color.b;
             }
         }
         return {obj: obj, color: color}
@@ -269,9 +287,9 @@ function Scene() {
                 var offset = x*4+y*4*screen_width;
 
                 pixels.data[offset+3] = 255;
-                pixels.data[offset+0] = trace.color*255;
-                pixels.data[offset+1] = trace.color*255;
-                pixels.data[offset+2] = trace.color*255;
+                pixels.data[offset+0] = trace.color.r*255;
+                pixels.data[offset+1] = trace.color.g*255;
+                pixels.data[offset+2] = trace.color.b*255;
             }
         }
     }
