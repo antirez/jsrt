@@ -25,17 +25,24 @@ function computeScene() {
     var sphere1 = new Sphere();
     var sphere2 = new Sphere();
     var light1 = new Light();
+    var light2 = new Light();
+
+    sphere1.center.x -= .8
+    sphere1.radius = 0.5;
    
-    sphere2.center.x += 1.2;
+    sphere2.center.x += .8;
     sphere2.radius = 0.5;
-    sphere2.center.z += 1;
-    sphere2.center.y -= .3;
 
     light1.center.set(4,-1,-2);
+    light2.center.set(-1,-1,-2);
 
     Object1 = scene.addObject(new Obj("Sphere 1",sphere1));
     Object2 = scene.addObject(new Obj("Sphere 2",sphere2));
     scene.addLight(new Obj("Light 1",light1));
+    var l2 = scene.addLight(new Obj("Light 2",light2));
+    l2.color.r = .3;
+    l2.color.g = .3;
+    l2.color.b = .3;
 
     Object1.color.r = 1;
     Object1.color.g = .3;
@@ -262,12 +269,15 @@ function Scene() {
                 /* Now the dot product between the normal and the point
                    towards the light is the cosine between the angle
                    formed by the vectors, that is, our brightness. */
-                var brightness = normal.dot(l);
-                if (brightness < 0) brightness = 0;
-                color.r = brightness * obj.color.r;
-                color.g = brightness * obj.color.g;
-                color.b = brightness * obj.color.b;
+                var cosine = normal.dot(l);
+                if (cosine < 0) cosine = 0;
+                color.r += cosine * obj.color.r * light.color.r;
+                color.g += cosine * obj.color.g * light.color.g;
+                color.b += cosine * obj.color.b * light.color.b;
             }
+            if (color.r > 1) color.r = 1;
+            if (color.g > 1) color.g = 1;
+            if (color.b > 1) color.b = 1;
         }
         return {obj: obj, color: color}
     }
