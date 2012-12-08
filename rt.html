@@ -98,16 +98,16 @@ function Vector(x,y,z) {
             (v1.x*v2.y)-(v1.y*v2.x));
     }
     
-    // Vector normalization (return a vector with magnitude 1 but with the
-    // same orientation as the original vector).
+    // Vector normalization (modify the vector so that that it has
+    // magnitude 1 but with the same orientation as the original vector).
     this.normalize = function() {
         var m = this.magnitude();
 
         if (m == 0) m = 1;
-        return new Vector(
-            this.x / m,
-            this.y / m,
-            this.z / m);
+        this.x /= m;
+        this.y /= m;
+        this.z /= m;
+        return this;
     }
 }
 
@@ -139,11 +139,22 @@ function Sphere() {
        1: internal intersection (the ray origin is inside the sphere)
        2: external intersection (the ray origin is outside the sphere)
 
-       The distance is simply the intersection distance. */
+       The distance is simply the intersection distance.
+       Note: This function needs ray.direction to be normalized. */
     this.intersect = function(ray,root) {
-        var omc = this.center.sub(ray.origin);
-        var b = omc.dot(ray.direction);
-        var disc = b*b - omc.dot(omc) + this.radius*this.radius;
+        var x, y, z;
+
+        /* set x,y,z to the sphere center minus the ray origin. */
+        x = this.center.x - ray.origin.x;
+        y = this.center.y - ray.origin.y;
+        z = this.center.z - ray.origin.z;
+        /* compute x,y,z dot product with itself. */
+        var xyz_dot = (x*x)+(y*y)+(z*z);
+        /* compute dot product between x,y,z and ray direction. */
+        var b = (x*ray.direction.x)+(y*ray.direction.y)+(z*ray.direction.z);
+
+        /* We can now compute the discriminant and check for intersections. */
+        var disc = b*b - xyz_dot + this.radius*this.radius;
         var type = 0;
 
         if (disc > 0) {
@@ -198,17 +209,15 @@ function Scene() {
 
     this.traceScene = function () {
         var pov = new Vector(0,0,-4);
-        var dir = new Vector();
         var ray = new Ray();
 
+        ray.origin = pov
         for (var x = 0; x < screen_width; x++) {
             for (var y = 0; y < screen_height; y++) {
-                dir.set((x-screen_width/2)/100,
-                        (y-screen_height/2)/100,
-                       4);
-                dir = dir.normalize();
-                ray.origin = pov
-                ray.direction = dir;
+                ray.direction.set((x-screen_width/2)/100,
+                                  (y-screen_height/2)/100,
+                                  4);
+                ray.direction.normalize();
                 var trace = this.traceRay(ray);
                 var offset = x*4+y*4*screen_width;
 
@@ -227,10 +236,12 @@ function Scene() {
     }
 }
 
-var start = new Date().getTime();
 init();
-draw();
-console.debug("elapsed: "+((new Date().getTime())-start));
+for (var c = 0; c < 10; c++) {
+    var start = new Date().getTime();
+    draw();
+    console.debug("elapsed: "+((new Date().getTime())-start));
+}
 
 </script>
 </body>
