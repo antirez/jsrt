@@ -198,21 +198,20 @@ function Scene() {
 
     this.traceScene = function () {
         var pov = new Vector(0,0,-4);
+        var dir = new Vector();
         var ray = new Ray();
 
         for (var x = 0; x < screen_width; x++) {
             for (var y = 0; y < screen_height; y++) {
-                var dir = new Vector(
-                    (x-screen_width/2)/100,
-                    (y-screen_height/2)/100,
-                    0);
+                dir.set((x-screen_width/2)/100,
+                        (y-screen_height/2)/100,
+                       4);
                 dir = dir.normalize();
                 ray.origin = pov
                 ray.direction = dir;
                 var trace = this.traceRay(ray);
                 var offset = x*4+y*4*screen_width;
-                if (x == 0 && y == 0) console.debug(trace);
-                if (x == screen_width/2 && y == screen_height/2) console.debug(trace);
+
                 pixels.data[offset+3] = 255;
                 if (trace.color) {
                     pixels.data[offset+0] = 255;
@@ -228,8 +227,10 @@ function Scene() {
     }
 }
 
+var start = new Date().getTime();
 init();
 draw();
+console.debug("elapsed: "+((new Date().getTime())-start));
 
 </script>
 </body>
