@@ -7,8 +7,8 @@
 <script type="text/javascript">
 var ctx;
 var pixels;
-var screen_width = 320;
-var screen_height = 200;
+var screen_width = 520;
+var screen_height = 400;
 
 function init() {
     ctx = document.getElementById('framebuffer').getContext('2d');
@@ -22,35 +22,43 @@ function draw() {
 
 function computeScene() {
     var scene = new Scene();
-    var sphere1 = new Sphere();
-    var sphere2 = new Sphere();
-    var light1 = new Light();
-    var light2 = new Light();
 
-    sphere1.center.x -= .8
-    sphere1.radius = 0.5;
+    var sphere1 = scene.addObject(new Obj("Sphere 1",new Sphere()));
+    var sphere2 = scene.addObject(new Obj("Sphere 2",new Sphere()));
+    var light1 = scene.addLight(new Obj("Light 1",new Light()));
+    var light2 = scene.addLight(new Obj("Light 2",new Light()));
+    var light3 = scene.addLight(new Obj("Light 3",new Light()));
+
+    sphere1.o.center.x -= .8
+    sphere1.o.radius = 0.5;
    
-    sphere2.center.x += .8;
-    sphere2.radius = 0.5;
+    sphere2.o.center.x += .8;
+    sphere2.o.radius = 0.5;
 
-    light1.center.set(4,-1,-2);
-    light2.center.set(-1,-1,-2);
+    light1.o.center.set(4,-1,-2);
+    light2.o.center.set(-1,-1,-2);
+    light3.o.center.set(1,-6,-2);
 
-    Object1 = scene.addObject(new Obj("Sphere 1",sphere1));
-    Object2 = scene.addObject(new Obj("Sphere 2",sphere2));
-    scene.addLight(new Obj("Light 1",light1));
-    var l2 = scene.addLight(new Obj("Light 2",light2));
-    l2.color.r = .3;
-    l2.color.g = .3;
-    l2.color.b = .3;
+    light1.color.r = .5;
+    light1.color.g = .5;
+    light1.color.b = .5;
 
-    Object1.color.r = 1;
-    Object1.color.g = .3;
-    Object1.color.b = .3;
+    light2.color.r = .3;
+    light2.color.g = .3;
+    light2.color.b = .3;
 
-    Object2.color.r = .3;
-    Object2.color.g = 1;
-    Object2.color.b = .3;
+    light3.color.r = .4;
+    light3.color.g = .4;
+    light3.color.b = .4;
+
+    sphere1.color.r = 1;
+    sphere1.color.g = .3;
+    sphere1.color.b = .3;
+    sphere1.specularity = .5;
+
+    sphere2.color.r = .3;
+    sphere2.color.g = 1;
+    sphere2.color.b = .3;
 
     scene.traceScene();
 }
@@ -216,6 +224,7 @@ function Obj(name,o) {
     this.name = name;
     this.o = o;
     this.color = {r: 1, g: 1, b: 1};
+    this.specularity = 0;
 }
 
 // Scene object
@@ -274,6 +283,17 @@ function Scene() {
                 color.r += cosine * obj.color.r * light.color.r;
                 color.g += cosine * obj.color.g * light.color.g;
                 color.b += cosine * obj.color.b * light.color.b;
+                /* Add phong shading */
+                if (obj.specularity > 0) {
+                    var Vr = l.sub(normal.mul(new Vector(cosine*2,cosine*2,cosine*2)));
+                    var cosSigma = ray.direction.dot(Vr);
+                    if (cosSigma > 0) {
+                        var specularity = obj.specularity;
+                        color.r += obj.color.r * specularity * Math.pow(cosSigma,64);
+                        color.g += obj.color.g * specularity * Math.pow(cosSigma,64);
+                        color.b += obj.color.b * specularity * Math.pow(cosSigma,64);
+                    }
+                }
             }
             if (color.r > 1) color.r = 1;
             if (color.g > 1) color.g = 1;
@@ -306,7 +326,7 @@ function Scene() {
 }
 
 init();
-for (var c = 0; c < 10; c++) {
+for (var c = 0; c < 1; c++) {
     var start = new Date().getTime();
     draw();
     console.debug("elapsed: "+((new Date().getTime())-start));
