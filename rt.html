@@ -31,7 +31,7 @@ function computeScene() {
     light1.center.set(4,-1,-2);
     scene.addObject(new Obj("Sphere 1",sphere1));
     scene.addObject(new Obj("Sphere 2",sphere2));
-    scene.addObject(new Obj("Light 1",light1));
+    scene.addLight(new Obj("Light 1",light1));
     scene.traceScene();
 }
 
@@ -195,19 +195,20 @@ function Light() {
 function Obj(name,o) {
     this.name = name;
     this.o = o;
-
-    this.isLight = function() {
-        return this.o.type == "light";
-    }
 }
 
 // Scene object
 
 function Scene() {
     this.objects = [];
+    this.lights = [];
 
     this.addObject = function(o) {
         this.objects.push(o);
+    }
+
+    this.addLight = function(o) {
+        this.lights.push(o);
     }
 
     this.traceRay = function (ray) {
@@ -217,13 +218,11 @@ function Scene() {
 
         for (var j = 0; j < this.objects.length; j++) {
             var test_obj = this.objects[j];
-            if (test_obj.isLight() == false) {
-                var res = test_obj.o.intersect(ray);
-                if (res.type) {
-                    if (obj == null || res.dist < distance) {
-                        obj = test_obj;
-                        color = 1.0;
-                    }
+            var res = test_obj.o.intersect(ray);
+            if (res.type) {
+                if (obj == null || res.dist < distance) {
+                    obj = test_obj;
+                    color = 1.0;
                 }
             }
         }
