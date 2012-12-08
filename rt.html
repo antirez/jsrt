@@ -26,8 +26,9 @@ function computeScene() {
     var sphere2 = new Sphere();
     var light1 = new Light();
    
-    sphere2.center.x += 0.8;
+    sphere2.center.x += 1.2;
     sphere2.radius = 0.5;
+    sphere2.center.z += 1;
     light1.center.set(4,-1,-2);
     scene.addObject(new Obj("Sphere 1",sphere1));
     scene.addObject(new Obj("Sphere 2",sphere2));
@@ -134,7 +135,7 @@ function Sphere() {
 
     /* Normal on a point of the sphere, normalized. */
     this.normalToPoint = function(p) {
-        var n = p.sub(center).normalize();
+        return p.sub(this.center).normalize();
     }
 
     /* Intersect a ray with this sphere. Returns an object
@@ -222,8 +223,32 @@ function Scene() {
             if (res.type) {
                 if (obj == null || res.dist < distance) {
                     obj = test_obj;
-                    color = 1.0;
+                    distance = res.dist;
                 }
+            }
+        }
+        /* Determine the color if we hit sometihng */
+        if (obj) {
+            /* We have the distance, so we can compute the intersection
+               point simply as: origin + (direction * distance) */
+            var point = new Vector(ray.direction.x,
+                                   ray.direction.y,
+                                   ray.direction.z);
+            point.x = ray.origin.x + point.x*distance;
+            point.y = ray.origin.y + point.y*distance;
+            point.z = ray.origin.z + point.z*distance;
+            /* Now get the normal to the intersection point of the object */
+            var normal = obj.o.normalToPoint(point);
+            for (j = 0; j < this.lights.length; j++) {
+                var light = this.lights[j];
+                /* Compute the vector that looks from the intersection
+                   point to the light */
+                var l = light.o.center.sub(point).normalize();
+                /* Now the dot product between the normal and the point
+                   towards the light is the cosine between the angle
+                   formed by the vectors, that is, our brightness. */
+                color = normal.dot(l);
+                if (color < 0) color = 0;
             }
         }
         return {obj: obj, color: color}
@@ -244,15 +269,9 @@ function Scene() {
                 var offset = x*4+y*4*screen_width;
 
                 pixels.data[offset+3] = 255;
-                if (trace.color) {
-                    pixels.data[offset+0] = 255;
-                    pixels.data[offset+1] = 255;
-                    pixels.data[offset+2] = 255;
-                } else {
-                    pixels.data[offset+0] = 0;
-                    pixels.data[offset+1] = 0;
-                    pixels.data[offset+2] = 0;
-                }
+                pixels.data[offset+0] = trace.color*255;
+                pixels.data[offset+1] = trace.color*255;
+                pixels.data[offset+2] = trace.color*255;
             }
         }
     }
