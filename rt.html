@@ -22,9 +22,13 @@ function draw() {
 
 function computeScene() {
     var scene = new Scene();
-    var sphere = new Sphere();
-    
-    scene.addObject(new Obj("My Sphere",sphere));
+    var sphere1 = new Sphere();
+    var sphere2 = new Sphere();
+   
+    sphere2.center.x += 0.8;
+    sphere2.radius = 0.5;
+    scene.addObject(new Obj("Sphere 1",sphere1));
+    scene.addObject(new Obj("Sphere 2",sphere2));
     scene.traceScene();
 }
 
@@ -174,7 +178,14 @@ function Sphere() {
     }
 }
 
-// Object implementation
+// Light
+
+function Light() {
+    this.center = new Vector();
+    this.this = "light";
+}
+
+// Generic scene object implementation
 
 function Obj(name,o) {
     this.name = name;
@@ -198,11 +209,16 @@ function Scene() {
         var distance = 1000000;
         var obj = null;
         var color = 0;
-        var test_obj = this.objects[0];
 
-        if (test_obj.o.intersect(ray,distance).type) {
-            obj = test_obj;
-            color = 1.0;
+        for (var j = 0; j < this.objects.length; j++) {
+            var test_obj = this.objects[j];
+            var res = test_obj.o.intersect(ray,distance);
+            if (res.type) {
+                if (obj == null || res.dist < distance) {
+                    obj = test_obj;
+                    color = 1.0;
+                }
+            }
         }
         return {obj: obj, color: color}
     }
