@@ -280,18 +280,19 @@ function Scene() {
                    formed by the vectors, that is, our brightness. */
                 var cosine = normal.dot(l);
                 if (cosine < 0) cosine = 0;
+                /* Diffuse shading */
                 color.r += cosine * obj.color.r * light.color.r;
                 color.g += cosine * obj.color.g * light.color.g;
                 color.b += cosine * obj.color.b * light.color.b;
-                /* Add phong shading */
+                /* Phong shading */
                 if (obj.specularity > 0) {
                     var Vr = l.sub(normal.mul(new Vector(cosine*2,cosine*2,cosine*2)));
                     var cosSigma = ray.direction.dot(Vr);
                     if (cosSigma > 0) {
                         var specularity = obj.specularity;
-                        color.r += obj.color.r * specularity * Math.pow(cosSigma,64);
-                        color.g += obj.color.g * specularity * Math.pow(cosSigma,64);
-                        color.b += obj.color.b * specularity * Math.pow(cosSigma,64);
+                        color.r += light.color.r * specularity * Math.pow(cosSigma,64);
+                        color.g += light.color.g * specularity * Math.pow(cosSigma,64);
+                        color.b += light.color.b * specularity * Math.pow(cosSigma,64);
                     }
                 }
             }
