@@ -256,6 +256,9 @@ function Scene() {
     this.objects = [];
     this.lights = [];
 
+    /* We create a few objects that reuse for performance issues. */
+    this.sray = new Ray();
+
     this.addObject = function(o) {
         this.objects.push(o);
         return o;
@@ -270,7 +273,6 @@ function Scene() {
         var obj = null;
         var color = {r: 0, g: 0, b: 0}
         var distance = +Infinity;
-        var sray = new Ray(); /* Shadow ray */
 
         for (var j = 0; j < this.objects.length; j++) {
             var test_obj = this.objects[j];
@@ -316,21 +318,21 @@ function Scene() {
                    If this ray intersects some object with a distance smaller
                    than the light itself, this point is in shadow from the
                    point of view of this light. */
-                sray.origin.set(x,y,z);
+                this.sray.origin.set(x,y,z);
                 /* We need to add a small number towards the light to the
                    origin vector, to make sure it will not intersect with the
                    current object itself. */
-                sray.origin.x += lx/10000;
-                sray.origin.y += ly/10000;
-                sray.origin.z += lz/10000;
+                this.sray.origin.x += lx/10000;
+                this.sray.origin.y += ly/10000;
+                this.sray.origin.z += lz/10000;
                 /* To set the direction  we can use lx, ly, lz variables that
                    are already set to a normalized vector pointing from the
                    intersection point to the light. */
-                sray.direction.set(lx, ly, lz);
+                this.sray.direction.set(lx, ly, lz);
                 var shadow = false;
                 for (var i = 0; i < this.objects.length; i++) {
                     var test_obj = this.objects[i];
-                    var res = test_obj.o.intersect(sray);
+                    var res = test_obj.o.intersect(this.sray);
                     if (res.type) {
                         shadow = true;
                         break;
