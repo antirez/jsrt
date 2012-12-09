@@ -23,6 +23,8 @@ function init() {
 };
 
 function draw() {
+    if (frame > 160) return;
+
     var start = new Date().getTime();
     computeScene();
     ctx.putImageData(pixels, 0, 0);
@@ -268,6 +270,7 @@ function Scene() {
         var obj = null;
         var color = {r: 0, g: 0, b: 0}
         var distance = +Infinity;
+        var sray = new Ray(); /* Shadow ray */
 
         for (var j = 0; j < this.objects.length; j++) {
             var test_obj = this.objects[j];
@@ -290,7 +293,9 @@ function Scene() {
             var normal = obj.o.normalToPoint(x,y,z);
             for (j = 0; j < this.lights.length; j++) {
                 var light = this.lights[j];
-                /* Compute the vector that looks from the intersection
+
+                /* COMPUTE RAY INTERSECTION POINT.
+                   Compute the vector that looks from the intersection
                    point to the light. We do this simply subtracting the
                    intersection point from the light position. */
                 var lx = light.o.center.x - x;
@@ -302,16 +307,50 @@ function Scene() {
                 lx /= len;
                 ly /= len;
                 lz /= len;
-                /* Now the dot product between the normal and the point
+
+                /* HANDLE SHADOWS.
+                   Is this light obscured by some other object?
+                   We simply trace a ray between the ray-object intersection
+                   point (x,y,z variables) and the light center.
+
+                   If this ray intersects some object with a distance smaller
+                   than the light itself, this point is in shadow from the
+                   point of view of this light. */
+                sray.origin.set(x,y,z);
+                /* We need to add a small number towards the light to the
+                   origin vector, to make sure it will not intersect with the
+                   current object itself. */
+                sray.origin.x += lx/10000;
+                sray.origin.y += ly/10000;
+                sray.origin.z += lz/10000;
+                /* To set the direction  we can use lx, ly, lz variables that
+                   are already set to a normalized vector pointing from the
+                   intersection point to the light. */
+                sray.direction.set(lx, ly, lz);
+                var shadow = false;
+                for (var i = 0; i < this.objects.length; i++) {
+                    var test_obj = this.objects[i];
+                    var res = test_obj.o.intersect(sray);
+                    if (res.type) {
+                        shadow = true;
+                        break;
+                    }
+                }
+                if (shadow) continue; /* try next light */
+
+                /* DIFFUSE SHADING.
+                   Now the dot product between the normal and the point
                    towards the light is the cosine between the angle
                    formed by the vectors, that is, our brightness. */
                 var cosine = normal.x*lx+normal.y*ly+normal.z*lz;
                 if (cosine < 0) cosine = 0;
-                /* Diffuse shading */
                 color.r += cosine * obj.color.r * light.color.r;
                 color.g += cosine * obj.color.g * light.color.g;
                 color.b += cosine * obj.color.b * light.color.b;
-                /* Phong shading */
+
+                /* SPECULAR SHADING.
+                   Add point of view dependent specular light using
+                   Phone shading. */
                 if (obj.specularity > 0) {
                     var vrx = lx - normal.x * cosine * 2,
                         vry = ly - normal.y * cosine * 2,
