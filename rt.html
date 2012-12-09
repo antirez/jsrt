@@ -5,19 +5,29 @@
 <body>
 <canvas id="framebuffer" width="800" height="600"></canvas>
 <script type="text/javascript">
+/* Javascript minimal ray tracing engine
+ * Copyright (C) 2012 Salvatore Sanfilippo <antirez@gmail.com>
+ *
+ * This softare is released under the terms of the BSD two-clause license. */
+
 var ctx;
 var pixels;
-var screen_width = 520;
-var screen_height = 400;
+var screen_width = 320;
+var screen_height = 200;
+var frame = 0;
 
 function init() {
     ctx = document.getElementById('framebuffer').getContext('2d');
     pixels = ctx.createImageData(screen_width, screen_height);
+    setInterval(draw, 1000 / 25);
 };
 
 function draw() {
+    var start = new Date().getTime();
     computeScene();
     ctx.putImageData(pixels, 0, 0);
+    console.debug("Frame "+frame+" ms: "+((new Date().getTime())-start));
+    frame++;
 };
 
 function computeScene() {
@@ -29,10 +39,11 @@ function computeScene() {
     var light2 = scene.addLight(new Obj("Light 2",new Light()));
     var light3 = scene.addLight(new Obj("Light 3",new Light()));
 
-    sphere1.o.center.x -= .8
+    sphere1.o.center.x = Math.cos(frame/10);
+    sphere1.o.center.z = Math.sin(frame/10);
     sphere1.o.radius = 0.5;
    
-    sphere2.o.center.x += .8;
+    sphere2.o.center.x = 0;
     sphere2.o.radius = 0.5;
 
     light1.o.center.set(4,-1,-2);
@@ -59,6 +70,7 @@ function computeScene() {
     sphere2.color.r = .3;
     sphere2.color.g = 1;
     sphere2.color.b = .3;
+    sphere2.specularity = .5;
 
     scene.traceScene();
 }
@@ -346,11 +358,6 @@ function Scene() {
 }
 
 init();
-for (var c = 0; c < 1; c++) {
-    var start = new Date().getTime();
-    draw();
-    console.debug("elapsed: "+((new Date().getTime())-start));
-}
 
 </script>
 </body>
