@@ -160,9 +160,18 @@ function Sphere() {
     this.center = new Vector();
     this.radius = 1.0;
 
-    /* Normal on a point of the sphere, normalized. */
-    this.normalToPoint = function(p) {
-        return p.sub(this.center).normalize();
+    /* Normal on a point of the sphere, normalized.
+       We don't use the Vector object for speed issues. */
+    this.normalToPoint = function(x,y,z) {
+        x -= this.center.x;
+        y -= this.center.y;
+        z -= this.center.z;
+        /* we already know the magnitudo that is just the radius of the sphere
+           so we can easily normalize the vector just dividing for it. */
+        x /= this.radius;
+        y /= this.radius;
+        z /= this.radius;
+        return {x: x, y: y, z: z};
     }
 
     /* Intersect a ray with this sphere. Returns an object
@@ -262,30 +271,36 @@ function Scene() {
         if (obj) {
             /* We have the distance, so we can compute the intersection
                point simply as: origin + (direction * distance) */
-            var point = new Vector(ray.direction.x,
-                                   ray.direction.y,
-                                   ray.direction.z);
-            point.x = ray.origin.x + point.x*distance;
-            point.y = ray.origin.y + point.y*distance;
-            point.z = ray.origin.z + point.z*distance;
+            var x = ray.origin.x + ray.direction.x*distance;
+                y = ray.origin.y + ray.direction.y*distance;
+                z = ray.origin.z + ray.direction.z*distance;
             /* Now get the normal to the intersection point of the object */
-            var normal = obj.o.normalToPoint(point);
+            var normal = obj.o.normalToPoint(x,y,z);
             for (j = 0; j < this.lights.length; j++) {
                 var light = this.lights[j];
                 /* Compute the vector that looks from the intersection
-                   point to the light */
-                var l = light.o.center.sub(point).normalize();
+                   point to the light. We do this simply subtracting the
+                   intersection point from the light position. */
+                var lx = light.o.center.x - x;
+                var ly = light.o.center.y - y;
+                var lz = light.o.center.z - z;
+                /* Normalize */
+                var len = Math.sqrt(lx*lx + ly*ly + lz*lz);
+                if (len == 0) len = 1;
+                lx /= len;
+                ly /= len;
+                lz /= len;
                 /* Now the dot product between the normal and the point
                    towards the light is the cosine between the angle
                    formed by the vectors, that is, our brightness. */
-                var cosine = normal.dot(l);
+                var cosine = normal.x*lx+normal.y*ly+normal.z*lz;
                 if (cosine < 0) cosine = 0;
                 /* Diffuse shading */
                 color.r += cosine * obj.color.r * light.color.r;
                 color.g += cosine * obj.color.g * light.color.g;
                 color.b += cosine * obj.color.b * light.color.b;
                 /* Phong shading */
-                if (obj.specularity > 0) {
+                if (false && obj.specularity > 0) {
                     var Vr = l.sub(normal.mul(new Vector(cosine*2,cosine*2,cosine*2)));
                     var cosSigma = ray.direction.dot(Vr);
                     if (cosSigma > 0) {
