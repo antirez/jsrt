@@ -300,9 +300,13 @@ function Scene() {
                 color.g += cosine * obj.color.g * light.color.g;
                 color.b += cosine * obj.color.b * light.color.b;
                 /* Phong shading */
-                if (false && obj.specularity > 0) {
-                    var Vr = l.sub(normal.mul(new Vector(cosine*2,cosine*2,cosine*2)));
-                    var cosSigma = ray.direction.dot(Vr);
+                if (obj.specularity > 0) {
+                    var vrx = lx - normal.x * cosine * 2,
+                        vry = ly - normal.y * cosine * 2,
+                        vrz = lz - normal.z * cosine * 2;
+                    var cosSigma = (ray.direction.x*vrx)+
+                                   (ray.direction.y*vry)+
+                                   (ray.direction.z*vrz);
                     if (cosSigma > 0) {
                         var specularity = obj.specularity;
                         color.r += light.color.r * specularity * Math.pow(cosSigma,64);
