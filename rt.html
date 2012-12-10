@@ -86,70 +86,24 @@ function Vector(x,y,z) {
     this.x = x;
     this.y = y;
     this.z = z;
+}
 
+Vector.prototype = {
     // Set x, y, z
-    this.set = function(x,y,z) {
+    set: function(x,y,z) {
         this.x = x;
         this.y = y;
         this.z = z;
-    }
-
-    // Return true if the two vectors are equal
-    this.equal = function(v2) {
-        var v1 = this;
-        return v1.x == v2.x && v1.y == v2.y && v1.z == v2.z;
-    }
-
-    // Vectors addition
-    this.add = function(v2) {
-        var v1 = this;
-        return new Vector(v1.x+v2.x, v1.y+v2.y, v1.z+v2.z);
-    }
-
-    // Vectors subtraction
-    this.sub = function(v2) {
-        var v1 = this;
-        return new Vector(v1.x-v2.x, v1.y-v2.y, v1.z-v2.z);
-    }
-
-    // Vectors multiplication
-    this.mul = function(v2) {
-        var v1 = this;
-        return new Vector(v1.x*v2.x, v1.y*v2.y, v1.z*v2.z);
-    }
-
-    // Vectors division
-    this.div = function(v2) {
-        var v1 = this;
-        return new Vector(
-            v1.x/ (v2.x == 0 ? 1 : v2.x),
-            v1.y/ (v2.y == 0 ? 1 : v2.y),
-            v1.z/ (v2.z == 0 ? 1 : v2.z));
-    }
+    },
 
     // Vector magnitude
-    this.magnitude = function() {
+    magnitude: function() {
         return Math.sqrt(this.x*this.x + this.y*this.y + this.z*this.z);
-    }
+    },
 
-    // Vector dot (scalar) product
-    this.dot = function(v2) {
-        var v1 = this;
-        return v1.x*v2.x + v1.y*v2.y + v1.z*v2.z;
-    }
-
-    // Vector cross (vectorial) product
-    this.cross = function(v2) {
-        var v1 = this;
-        return new Vector(
-            (v1.y*v2.z)-(v1.z*v2.y),
-            (v1.z*v2.x)-(v1.x*v2.z),
-            (v1.x*v2.y)-(v1.y*v2.x));
-    }
-    
     // Vector normalization (modify the vector so that that it has
     // magnitude 1 but with the same orientation as the original vector).
-    this.normalize = function() {
+    normalize: function() {
         var m = this.magnitude();
 
         if (m == 0) m = 1;
@@ -173,10 +127,12 @@ function Sphere() {
     this.type = "sphere";
     this.center = new Vector();
     this.radius = 1.0;
+}
 
+Sphere.prototype = {
     /* Normal on a point of the sphere, normalized.
        We don't use the Vector object for speed issues. */
-    this.normalToPoint = function(x,y,z) {
+    normalToPoint: function(x,y,z) {
         x -= this.center.x;
         y -= this.center.y;
         z -= this.center.z;
@@ -186,7 +142,7 @@ function Sphere() {
         y /= this.radius;
         z /= this.radius;
         return {x: x, y: y, z: z};
-    }
+    },
 
     /* Intersect a ray with this sphere. Returns an object
        with two fields: 'type' and 'dist'.
@@ -201,7 +157,7 @@ function Sphere() {
        the intersection point.
 
        NOTE: This function needs ray.direction to be normalized. */
-    this.intersect = function(ray) {
+    intersect: function(ray) {
         var x, y, z, distance = +Infinity;
 
         /* set x,y,z to the sphere center minus the ray origin. */
@@ -255,21 +211,22 @@ function Obj(name,o) {
 function Scene() {
     this.objects = [];
     this.lights = [];
-
     /* We create a few objects that reuse for performance issues. */
     this.sray = new Ray();
+}
 
-    this.addObject = function(o) {
+Scene.prototype = {
+    addObject: function(o) {
         this.objects.push(o);
         return o;
-    }
+    },
 
-    this.addLight = function(o) {
+    addLight: function(o) {
         this.lights.push(o);
         return o;
-    }
+    },
 
-    this.traceRay = function (ray) {
+    traceRay: function (ray) {
         var obj = null;
         var color = {r: 0, g: 0, b: 0}
         var distance = +Infinity;
@@ -373,9 +330,9 @@ function Scene() {
             if (color.b > 1) color.b = 1;
         }
         return {obj: obj, color: color}
-    }
+    },
 
-    this.traceScene = function () {
+    traceScene: function () {
         var pov = new Vector(0,0,-4);
         var ray = new Ray();
 
