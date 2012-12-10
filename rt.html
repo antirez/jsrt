@@ -68,11 +68,13 @@ function computeScene() {
     sphere1.color.g = .3;
     sphere1.color.b = .3;
     sphere1.specularity = .5;
+    sphere1.reflection = .1;
 
     sphere2.color.r = .3;
     sphere2.color.g = 1;
     sphere2.color.b = .3;
     sphere2.specularity = .5;
+    sphere2.reflection = .1;
 
     scene.traceScene();
 }
@@ -204,6 +206,7 @@ function Obj(name,o) {
     this.o = o;
     this.color = {r: 1, g: 1, b: 1};
     this.specularity = 0;
+    this.reflection = 0;
 }
 
 // Scene object
@@ -211,8 +214,6 @@ function Obj(name,o) {
 function Scene() {
     this.objects = [];
     this.lights = [];
-    /* We create a few objects that reuse for performance issues. */
-    this.sray = new Ray();
 }
 
 Scene.prototype = {
@@ -226,9 +227,9 @@ Scene.prototype = {
         return o;
     },
 
-    traceRay: function (ray) {
+    traceRay: function (ray, depth) {
         var obj = null;
-        var color = {r: 0, g: 0, b: 0}
+        var color = {r: 0, g: 0, b: 0};
         var distance = +Infinity;
 
         for (var j = 0; j < this.objects.length; j++) {
@@ -241,16 +242,18 @@ Scene.prototype = {
                 }
             }
         }
+
         /* Determine the color if we hit sometihng */
         if (obj) {
             /* We have the distance, so we can compute the intersection
                point simply as: origin + (direction * distance) */
-            var x = ray.origin.x + ray.direction.x*distance;
-                y = ray.origin.y + ray.direction.y*distance;
+            var x = ray.origin.x + ray.direction.x*distance,
+                y = ray.origin.y + ray.direction.y*distance,
                 z = ray.origin.z + ray.direction.z*distance;
             /* Now get the normal to the intersection point of the object */
             var normal = obj.o.normalToPoint(x,y,z);
-            for (j = 0; j < this.lights.length; j++) {
+
+            for (var j = 0; j < this.lights.length; j++) {
                 var light = this.lights[j];
 
                 /* COMPUTE RAY INTERSECTION POINT.
@@ -275,22 +278,28 @@ Scene.prototype = {
                    If this ray intersects some object with a distance smaller
                    than the light itself, this point is in shadow from the
                    point of view of this light. */
-                this.sray.origin.set(x,y,z);
+                /* Compute the distance between the point and the light. */
+                var pldistance = Math.sqrt(
+                    (x-light.o.center.x)*(x-light.o.center.x)+
+                    (y-light.o.center.y)*(y-light.o.center.y)+
+                    (z-light.o.center.z)*(z-light.o.center.z));
+                var sray = new Ray();
+                sray.origin.set(x,y,z);
                 /* We need to add a small number towards the light to the
                    origin vector, to make sure it will not intersect with the
                    current object itself. */
-                this.sray.origin.x += lx/10000;
-                this.sray.origin.y += ly/10000;
-                this.sray.origin.z += lz/10000;
+                sray.origin.x += lx/10000;
+                sray.origin.y += ly/10000;
+                sray.origin.z += lz/10000;
                 /* To set the direction  we can use lx, ly, lz variables that
                    are already set to a normalized vector pointing from the
                    intersection point to the light. */
-                this.sray.direction.set(lx, ly, lz);
+                sray.direction.set(lx, ly, lz);
                 var shadow = false;
                 for (var i = 0; i < this.objects.length; i++) {
                     var test_obj = this.objects[i];
-                    var res = test_obj.o.intersect(this.sray);
-                    if (res.type) {
+                    var res = test_obj.o.intersect(sray);
+                    if (res.type && res.dist < pldistance) {
                         shadow = true;
                         break;
                     }
@@ -324,6 +333,36 @@ Scene.prototype = {
                         color.b += light.color.b * specularity * Math.pow(cosSigma,64);
                     }
                 }
+
+                /* REFLECTION.
+                   This is easy, we compute the reflection ray, that
+                   is given by:
+
+                   Rr = R - 2* N * (R dot N)
+
+                   Where R is the ray that we want reflected.
+                         N is the normal of the surface.
+
+                   Having the ray we simply call this function recursively
+                   to check the color of the object hit by this reflected
+                   ray. */
+                if (obj.reflection > 0 && depth < 3) {
+                    var rr = new Ray();
+                    var dotnr = (ray.direction.x * normal.x) +
+                                (ray.direction.y * normal.y) +
+                                (ray.direction.z * normal.z);
+                    rr.origin.set(x,y,z);
+                    rr.direction.set(ray.direction.x - 2 * normal.x * dotnr,
+                                     ray.direction.y - 2 * normal.y * dotnr,
+                                     ray.direction.z - 2 * normal.z * dotnr);
+                    rr.origin.x += rr.direction.x / 10000;
+                    rr.origin.y += rr.direction.y / 10000;
+                    rr.origin.z += rr.direction.z / 10000;
+                    var rcolor = this.traceRay(rr,depth+1);
+                    color.r += rcolor.color.r * obj.reflection;
+                    color.g += rcolor.color.g * obj.reflection;
+                    color.b += rcolor.color.b * obj.reflection;
+                }
             }
             if (color.r > 1) color.r = 1;
             if (color.g > 1) color.g = 1;
@@ -343,7 +382,7 @@ Scene.prototype = {
                                   (y-screen_height/2)/100,
                                   4);
                 ray.direction.normalize();
-                var trace = this.traceRay(ray);
+                var trace = this.traceRay(ray,0);
                 var offset = x*4+y*4*screen_width;
 
                 pixels.data[offset+3] = 255;
