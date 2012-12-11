@@ -37,6 +37,7 @@ function computeScene() {
 
     var sphere1 = scene.addObject(new Obj("Sphere 1",new Sphere()));
     var sphere2 = scene.addObject(new Obj("Sphere 2",new Sphere()));
+    var plane = scene.addObject(new Obj("Ground",new Plane(0,.5,-2,0,.5,-4,2,.5,-2)));
     var light1 = scene.addLight(new Obj("Light 1",new Light()));
     var light2 = scene.addLight(new Obj("Light 2",new Light()));
     var light3 = scene.addLight(new Obj("Light 3",new Light()));
@@ -75,6 +76,10 @@ function computeScene() {
     sphere2.color.b = .3;
     sphere2.specularity = .5;
     sphere2.reflection = .1;
+
+    plane.color.r = .3;
+    plane.color.g = .3;
+    plane.color.b = .3;
 
     scene.traceScene();
 }
@@ -187,6 +192,76 @@ Sphere.prototype = {
                     if (root1 < distance) { distance = root1; type = 1; }
                 }
             }
+        }
+        return {type: type, dist: distance};
+    }
+}
+
+// Plane
+
+function Plane(x1,y1,z1,x2,y2,z2,x3,y3,z3) {
+    /* Create a plane passing from the three points. We take as input
+       the three points but internally represent the plane as the normal
+       to the plane and a point, in the form:
+
+       ax + by + cz + d = 0
+
+       Note: a,b,c is the vector representing the normal. We need to compute
+       a,b,c and d.
+
+       To compute the normal vector a,b,c we use the fact that given three
+       points we can compute v1 and v2, two vectors that are parallel to the
+       plan. */
+    var v1x = x1-x2, v1y = y1-y2, v1z = z1-z2;
+    var v2x = x1-x3, v2y = y1-y3, v2z = z1-z3;
+
+    /* Now the vectorial product between v1 and v2 is a vector that
+       is normal to the plane. */
+    var nx = (v1y*v2z)-(v1z*v2y);
+    var ny = (v1z*v2x)-(v1x*v2z);
+    var nz = (v1x*v2y)-(v1y*v2x);
+
+    /* We are still missing d, but since we know that x1,y1,z1 is a point
+       on the plane, we know that:
+
+       ax1 + by1 + cz1 + d = 0
+
+       so
+
+       d = -(ax1 + by1 + cz1)
+    */
+    this.normal = new Vector(nx,ny,nz);
+    this.d = -(nx*x1 + ny*y1 + nz*z1);
+}
+
+Plane.prototype = {
+    normalToPoint: function(x,y,z) {
+        return this.normal;
+    },
+
+    intersect: function(ray) {
+        var type = 0;
+        var distance = +Infinity;
+
+        /* First check if there is an intersection between the ray and the
+           plane. If the ray is parallel to the plane there is not for sure.
+
+           Compute the dot product between the ray direction and the plan
+           normal (that is, the cosine of the angle between the two vectors).
+           If it is zero we can not have a collision. */
+        var ndotrd = (this.normal.x * ray.direction.x) +
+                     (this.normal.y * ray.direction.y) +
+                     (this.normal.z * ray.direction.z);
+        if (ndotrd) {
+            /* Compute the intersection distance. */
+            var ndoro = (this.normal.x * ray.origin.x) +
+                        (this.normal.y * ray.origin.y) +
+                        (this.normal.z * ray.origin.z);
+            distance = - (ndoro + this.d)/ndotrd;
+            /* Now there is an intersection only if the distance is positive,
+               otherwise the intersection is not in the ray direction
+               (but is backward). */
+            if (distance > 0) type = 1;
         }
         return {type: type, dist: distance};
     }
